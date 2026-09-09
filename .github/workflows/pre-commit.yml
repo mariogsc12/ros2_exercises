@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ros_distro: [foxy, humble, jazzy]
+        ros_distro: [humble, jazzy]
     uses: ./.github/workflows/reusable-pre-commit.yml
     with:
       ros_distro: ${{ matrix.ros_distro }}

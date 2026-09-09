@@ -40,11 +40,11 @@ jobs:
 
       - name: Make CI script executable
         shell: bash
-        run: chmod +x .github/scripts/ci_build.sh
+        run: chmod +x .github/scripts/build_ros_pkgs.sh
 
       - name: Build all packages
         shell: bash
-        run: .github/scripts/ci_build.sh "${GITHUB_WORKSPACE}/ros2_ws"
+        run: ./.github/scripts/build_ros_pkgs.sh "${GITHUB_WORKSPACE}/ros2_ws"
 
       - name: Upload build logs
         if: always()
