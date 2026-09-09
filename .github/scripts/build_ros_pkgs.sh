@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ci_build.sh -- CI script that builds every ROS2 package in the workspace
+# ci_build.sh — CI script that builds every ROS2 package in the workspace
 # individually and fails (non-zero exit code) if any package fails to build.
 #
 # Usage:
@@ -9,14 +9,12 @@
 # Env vars:
 #   ROS_DISTRO_SETUP   Path to the ROS2 underlay setup.bash (default: /opt/ros/$ROS_DISTRO/setup.bash)
 #   COLCON_BUILD_ARGS  Extra args appended to every `colcon build` call (optional)
-
-
-# We intentionally do NOT use `set -e` globally, because we want to
-# keep building every package even after one fails, and only decide the
-# final exit code at the end. 
+#
 set -uo pipefail
+# NOTE: we intentionally do NOT use `set -e` globally, because we want to
+# keep building every package even after one fails, and only decide the
+# final exit code at the end. Each risky command is checked explicitly.
 
-# Directories
 WS_DIR="${1:-$(pwd)}"
 LOG_DIR="${WS_DIR}/ci_build_logs"
 
@@ -54,7 +52,13 @@ ROS_SETUP="${ROS_DISTRO_SETUP:-/opt/ros/${ROS_DISTRO:-humble}/setup.bash}"
 
 if [[ -f "${ROS_SETUP}" ]]; then
     log "Sourcing ROS2 underlay: ${ROS_SETUP}"
+    # ROS2's setup.bash references variables (e.g. AMENT_TRACE_SETUP_FILES)
+    # without initializing them first, which is incompatible with `set -u`.
+    # Temporarily disable nounset while sourcing it.
+    set +u
+    # shellcheck disable=SC1090
     source "${ROS_SETUP}"
+    set -u
 else
     err "Could not find ROS2 setup file at '${ROS_SETUP}'."
     err "Set ROS_DISTRO or ROS_DISTRO_SETUP to point to the correct setup.bash."
@@ -63,8 +67,10 @@ fi
 
 if [[ -f "install/setup.bash" ]]; then
     log "Sourcing existing overlay: install/setup.bash"
+    set +u
     # shellcheck disable=SC1090
     source "install/setup.bash"
+    set -u
 fi
 
 # ---------------------------------------------------------------------------
