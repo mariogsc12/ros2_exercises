@@ -1,0 +1,55 @@
+name: build
+
+on: 
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ros_distro: foxy
+            os: ubuntu-20.04
+            image: rostooling/setup-ros-docker:ubuntu-focal-latest
+          - ros_distro: humble
+            os: ubuntu-22.04
+            image: rostooling/setup-ros-docker:ubuntu-jammy-latest
+          - ros_distro: jazzy
+            os: ubuntu-24.04
+            image: rostooling/setup-ros-docker:ubuntu-noble-latest
+
+    runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.image }}
+    env:
+      ROS_DISTRO: ${{ matrix.ros_distro }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install rosdep dependencies
+        shell: bash
+        run: |
+          apt-get update
+          rosdep update
+          rosdep install --from-paths ros2_ws/src --ignore-src -r -y
+
+      - name: Make CI script executable
+        shell: bash
+        run: chmod +x .github/scripts/ci_build.sh
+
+      - name: Build all packages
+        shell: bash
+        run: .github/scripts/ci_build.sh "${GITHUB_WORKSPACE}/ros2_ws"
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci_build_logs-${{ matrix.ros_distro }}
+          path: ros2_ws/ci_build_logs/
+          if-no-files-found: ignore
